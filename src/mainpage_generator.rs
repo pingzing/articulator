@@ -24,7 +24,7 @@ impl MainPageHtml {
                         ul(id="normal_scripts_list") {
                             @ for script in scripts {
                                 li {
-                                    : raw!(format!("<a href=\"/scr/{}\">{}</a>", &script.name, &script.name))
+                                    : raw!(format!("<a href=\"/scr/{}\">{}</a>", &script.get_name(), &script.get_name()))
                                 }
                             }
                         }

@@ -7,6 +7,11 @@ extern crate walkdir;
 #[macro_use]
 extern crate horrorshow;
 
+mod json_structs;
+mod mainpage_generator;
+mod script_runner;
+mod powershell_runner;
+
 use iron::prelude::*;
 use iron::status;
 use iron::mime::Mime;
@@ -21,15 +26,15 @@ use std::io;
 use std::fs;
 use std::thread;
 use std::time::Duration;
+use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use rustc_serialize::json;
 use std::str::FromStr;
 
-mod json_structs;
 use json_structs::Script;
-
-mod mainpage_generator;
 use mainpage_generator::MainPageHtml;
+
+
 
 static IMMEDIATE_RET_PATH: &'static str = "ret_immediately";
 static SERVER_URL: &'static str = "10.6.1.25:3000";
@@ -71,7 +76,11 @@ fn show_scripts_handler(_: &mut Request) -> IronResult<Response> {
 
 fn script_handler(req: &mut Request) -> IronResult<Response> {
     let ref query = req.extensions.get::<Router>().unwrap().find("scriptName").unwrap_or("/");
-    let script_path = get_script_path(query);
+    let script = get_script(query);
+    if script.is_err() {
+        return script_error_handler();
+    }
+    let script_path = script.unwrap().get_full_path();
 
     match script_path {
         Ok(path) => {
@@ -151,34 +160,29 @@ fn get_script_list() -> io::Result<Vec<Script>> {
         let split_str = String::from(p.file_name().to_str().unwrap());
         let split_str: Vec<&str> = split_str.split('.').collect();
         let name = *split_str.first().unwrap();
+        
         let mut path = PathBuf::new();
         path.push(p.path());
-        let path_root = Path::new(path.strip_prefix(folder.as_path().parent().unwrap()).unwrap());
-        let path = String::from(path_root.to_str().unwrap()).replace("\\", "/");
-        scripts.push(Script::new(String::from_str(name).unwrap(), String::from(path)));
+        let path_root = Path::new(path
+                                .strip_prefix(folder.as_path().parent().unwrap())
+                                .unwrap());
+        let rel_path = String::from(path_root.to_str().unwrap()).replace("\\", "/");
+        
+        let path_ext = p.path().extension()
+                        .unwrap_or_else(|| OsStr::new(""))
+                        .to_str().unwrap_or_else(|| "");
+        scripts.push(Script::new(String::from_str(name).unwrap(), 
+                                 String::from(rel_path),
+                                 String::from(path_ext)));
     }
     return Ok(scripts);
 }
 
-fn get_script_path(script_name: &str) -> io::Result<PathBuf> {
-    let current_exe = try!(env::current_exe());
-    match current_exe.parent() {
-        Some(parent_dir) => {
-            let script_path = parent_dir.join("scripts").join(format!("{}.ps1", script_name));
-            // check in scripts dir
-            if fs::metadata(&script_path).is_ok() {
-                Ok(script_path)
-            } else {
-                let script_path = parent_dir.join("scripts")
-                                            .join(IMMEDIATE_RET_PATH)
-                                            .join(format!("{}.ps1", script_name));
-                if fs::metadata(&script_path).is_ok() {
-                    Ok(script_path)
-                } else {
-                    Err(io::Error::new(io::ErrorKind::NotFound, "Unable to generate script path."))
-                }
-            }
-        }
-        None => Err(io::Error::new(io::ErrorKind::NotFound, "Unable to generate script path.")),
+fn get_script(name: &str) -> io::Result<Script> {
+    let script_list: Vec<Script> = try!(get_script_list());
+    if let Some(script) = script_list.into_iter().find(|s| s.get_name() == name) {
+        Ok(script)
+    } else {
+        Err(io::Error::new(io::ErrorKind::NotFound, format!("Script with name {} not found.", name)))
     }
 }
