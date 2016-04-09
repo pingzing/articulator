@@ -46,7 +46,7 @@ fn main() {
     let mut chain = Chain::new(router);
 
     chain.link_before(logger_before);
-    //chain.link_after(logger_after); //why is this broken, I don't even know    
+    // chain.link_after(logger_after); //why is this broken, I don't even know
 
     Iron::new(chain).http(SERVER_URL).unwrap();
 }
@@ -62,7 +62,7 @@ fn show_mainpage_handler(_: &mut Request) -> IronResult<Response> {
     }
 }
 
-// todo: eliminate the unwrap-infestation in here
+// todo: Gotta figure out how to serialize trait objects for this one
 // fn show_scripts_handler(_: &mut Request) -> IronResult<Response> {
 // println!("Getting scripts...");
 // if let Ok(scripts) = get_script_list() {

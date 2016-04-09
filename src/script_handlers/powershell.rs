@@ -42,6 +42,7 @@ impl Script for PowerShellScript {
         json_structs::generic_get_full_path::<PowerShellScript>(self)
     }
 
+//todo: everything after defining output can probably live somewhere more generic
     fn run(&self) -> IronResult<Response> {
         let full_path = self.get_full_path();
         if full_path.is_err() {
