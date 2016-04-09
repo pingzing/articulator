@@ -9,8 +9,7 @@ extern crate horrorshow;
 
 mod json_structs;
 mod mainpage_generator;
-mod script_runner;
-mod powershell_runner;
+mod script_handlers;
 
 use iron::prelude::*;
 use iron::status;
@@ -20,7 +19,6 @@ use logger::Logger;
 
 use walkdir::WalkDir;
 
-use std::process::Command;
 use std::env;
 use std::io;
 use std::fs;
@@ -37,18 +35,18 @@ use mainpage_generator::MainPageHtml;
 
 
 static IMMEDIATE_RET_PATH: &'static str = "ret_immediately";
-static SERVER_URL: &'static str = "10.6.1.25:3000";
+static SERVER_URL: &'static str = "192.168.0.7:3000";
 
 fn main() {
     let (logger_before, logger_after) = Logger::new(None);
-    let router = router!(get "/" => show_mainpage_handler,
-                         get "/scr" => show_scripts_handler,                          
+    let router =
+        router!(get "/" => show_mainpage_handler,                                                   
                          get "/scr/:scriptName" => script_handler);
 
     let mut chain = Chain::new(router);
 
     chain.link_before(logger_before);
-    chain.link_after(logger_after);
+    //chain.link_after(logger_after); //why is this broken, I don't even know    
 
     Iron::new(chain).http(SERVER_URL).unwrap();
 }
@@ -56,7 +54,8 @@ fn main() {
 fn show_mainpage_handler(_: &mut Request) -> IronResult<Response> {
     if let Ok(scripts) = get_script_list() {
         let mainpage = MainPageHtml::new(scripts);
-        let content_type = "text/html".parse::<Mime>().unwrap();        
+        println!("Got mainpage: {}", mainpage.html_string);
+        let content_type = "text/html".parse::<Mime>().unwrap();
         return Ok(Response::with((content_type, status::Ok, mainpage.html_string)));
     } else {
         script_error_handler()
@@ -64,15 +63,15 @@ fn show_mainpage_handler(_: &mut Request) -> IronResult<Response> {
 }
 
 // todo: eliminate the unwrap-infestation in here
-fn show_scripts_handler(_: &mut Request) -> IronResult<Response> {
-    println!("Getting scripts...");
-    if let Ok(scripts) = get_script_list() {
-        let scripts = json::encode(&scripts).unwrap();
-        Ok(Response::with((status::Ok, scripts)))
-    } else {
-        script_error_handler()
-    }
-}
+// fn show_scripts_handler(_: &mut Request) -> IronResult<Response> {
+// println!("Getting scripts...");
+// if let Ok(scripts) = get_script_list() {
+//     let scripts = json::encode(&scripts).unwrap();
+//     Ok(Response::with((status::Ok, scripts)))
+// } else {
+//     script_error_handler()
+// }
+// }
 
 fn script_handler(req: &mut Request) -> IronResult<Response> {
     let ref query = req.extensions.get::<Router>().unwrap().find("scriptName").unwrap_or("/");
@@ -80,14 +79,15 @@ fn script_handler(req: &mut Request) -> IronResult<Response> {
     if script.is_err() {
         return script_error_handler();
     }
-    let script_path = script.unwrap().get_full_path();
+    let script = script.unwrap();
+    let script_path = script.get_full_path();
 
     match script_path {
         Ok(path) => {
             if path.to_string_lossy().contains(IMMEDIATE_RET_PATH) {
-                run_early_return_script(path)
+                run_early_return_script(script)
             } else {
-                run_normal_script(path)
+                script.run()
             }
         }
         Err(_) => {
@@ -97,42 +97,13 @@ fn script_handler(req: &mut Request) -> IronResult<Response> {
     }
 }
 
-fn run_normal_script(path: PathBuf) -> IronResult<Response> {
-    let output = Command::new("powershell.exe")
-                     .arg("-executionpolicy")
-                     .arg("bypass")
-                     .arg("-File")
-                     .arg(path)
-                     .output();
-    match output {
-        Ok(output) => {
-            match output.status.success() {
-                true => {
-                    let script_output = String::from_utf8_lossy(&output.stdout).into_owned();
-                    println!("Script success. Output:\n{}", script_output);
-                    Ok(Response::with((status::Ok, script_output)))
-                }
-                false => {
-                    println!("{}", String::from_utf8_lossy(&output.stderr).into_owned());
-                    script_error_handler()
-                }
-            }
-        }
-        Err(_) => {
-            println!("No output from PowerShell script.");
-            script_error_handler()
-        }                
-    }
-}
-
-fn run_early_return_script(path: PathBuf) -> IronResult<Response> {
-    thread::spawn(|| {
+fn run_early_return_script(script: Box<Script>) -> IronResult<Response> {
+    thread::spawn(move || {
         thread::sleep(Duration::from_millis(500));
-        run_normal_script(path).ok(); //explicitly ignoring the Result. Can't do anything about it at this point
+        script.run().ok();
     });
     Ok(Response::with((status::Ok, "Attempted to kick off early-return script.")))
 }
-
 
 fn script_error_handler() -> IronResult<Response> {
     Ok(Response::with(status::InternalServerError))
@@ -147,7 +118,7 @@ fn get_script_folder() -> io::Result<PathBuf> {
 }
 
 // todo: fix unwrap infestation in here
-fn get_script_list() -> io::Result<Vec<Script>> {
+fn get_script_list() -> io::Result<Vec<Box<Script>>> {
     let folder = try!(get_script_folder());
     let paths = WalkDir::new(&folder);
 
@@ -160,29 +131,38 @@ fn get_script_list() -> io::Result<Vec<Script>> {
         let split_str = String::from(p.file_name().to_str().unwrap());
         let split_str: Vec<&str> = split_str.split('.').collect();
         let name = *split_str.first().unwrap();
-        
+
         let mut path = PathBuf::new();
         path.push(p.path());
-        let path_root = Path::new(path
-                                .strip_prefix(folder.as_path().parent().unwrap())
-                                .unwrap());
+        let path_root = Path::new(path.strip_prefix(folder.as_path().parent().unwrap())
+                                      .unwrap());
         let rel_path = String::from(path_root.to_str().unwrap()).replace("\\", "/");
-        
-        let path_ext = p.path().extension()
+
+        let path_ext = p.path()
+                        .extension()
                         .unwrap_or_else(|| OsStr::new(""))
-                        .to_str().unwrap_or_else(|| "");
-        scripts.push(Script::new(String::from_str(name).unwrap(), 
-                                 String::from(rel_path),
-                                 String::from(path_ext)));
+                        .to_str()
+                        .unwrap_or_else(|| "");
+        if let Some(boxed_script) = json_structs::construct_script(String::from_str(name)
+                                                                       .unwrap(),
+                                                                   String::from(rel_path),
+                                                                   String::from(path_ext)) {
+            scripts.push(boxed_script);
+        } else {
+            return Err(io::Error::new(io::ErrorKind::InvalidInput,
+                                      format!("Unable to determine file type for script {:?}",
+                                              p.path())));
+        }
     }
     return Ok(scripts);
 }
 
-fn get_script(name: &str) -> io::Result<Script> {
-    let script_list: Vec<Script> = try!(get_script_list());
+fn get_script(name: &str) -> io::Result<Box<Script>> {
+    let script_list: Vec<Box<Script>> = try!(get_script_list());
     if let Some(script) = script_list.into_iter().find(|s| s.get_name() == name) {
         Ok(script)
     } else {
-        Err(io::Error::new(io::ErrorKind::NotFound, format!("Script with name {} not found.", name)))
+        Err(io::Error::new(io::ErrorKind::NotFound,
+                           format!("Script with name {} not found.", name)))
     }
 }

@@ -6,7 +6,7 @@ pub struct MainPageHtml {
 }
 
 impl MainPageHtml {
-    pub fn new(scripts: Vec<Script>) -> MainPageHtml {
+    pub fn new(scripts: Vec<Box<Script>>) -> MainPageHtml {
         MainPageHtml {
             html_string: html! {
                 : raw!("<!DOCTYPE html>");
@@ -24,7 +24,7 @@ impl MainPageHtml {
                         ul(id="normal_scripts_list") {
                             @ for script in scripts {
                                 li {
-                                    : raw!(format!("<a href=\"/scr/{}\">{}</a>", &script.get_name(), &script.get_name()))
+                                    : raw!(format!("<a href=\"/scr/{}\">{}</a>", script.get_name(), script.get_name()))
                                 }
                             }
                         }
