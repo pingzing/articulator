@@ -1,5 +1,5 @@
-use json_structs;
-use json_structs::{Script, ScriptKind};
+use scripts;
+use scripts::{Script, ScriptKind};
 
 use std::io;
 use std::path::PathBuf;
@@ -20,7 +20,7 @@ impl PowerShellScript {
         return PowerShellScript {
             name: n,
             relative_path: p,
-            script_kind: json_structs::get_type_kind_for_ext(&e),
+            script_kind: scripts::get_type_kind_for_ext(&e),
         };
     }
 }
@@ -39,10 +39,10 @@ impl Script for PowerShellScript {
     }
 
     fn get_full_path(&self) -> io::Result<PathBuf> {
-        json_structs::generic_get_full_path::<PowerShellScript>(self)
+        scripts::generic_get_full_path::<PowerShellScript>(self)
     }
 
-//todo: everything after defining output can probably live somewhere more generic
+    // todo: everything after defining output can probably live somewhere more generic
     fn run(&self) -> IronResult<Response> {
         let full_path = self.get_full_path();
         if full_path.is_err() {

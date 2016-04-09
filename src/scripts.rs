@@ -5,20 +5,35 @@ use std::string::*;
 use std::path::PathBuf;
 use std::env;
 use std::fs;
+use rustc_serialize::{Encodable, Encoder};
+
+use mopa::Any;
 
 use script_handlers::powershell::PowerShellScript;
 
 static IMMEDIATE_RET_PATH: &'static str = "ret_immediately";
 
-pub trait Script : Send + Sync {
+pub trait Script : Send + Sync + Any {
     fn get_name(&self) -> &str;
     fn get_relative_path(&self) -> &str;
     fn get_extension(&self) -> &str;
     fn get_full_path(&self) -> io::Result<PathBuf>;
     fn run(&self) -> IronResult<Response>;
 }
+mopafy!(Script);
 
-pub fn construct_script(name: String, path: String, extension: String) -> Option<Box<Script>> {    
+// Implements encoding for Script trait objects, and adds a tag indicating what script type they are, for when we deserialize them
+impl Encodable for Box<Script> {
+    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
+        if let Some(script) = self.downcast_ref::<PowerShellScript>() {
+            script.encode(s)
+        } else {
+            panic!("Unknown concrete script type.")
+        }
+    }
+}
+
+pub fn construct_script(name: String, path: String, extension: String) -> Option<Box<Script>> {
     let script_kind = get_type_kind_for_ext(&extension);
     match script_kind {
         ScriptKind::PowerShell => Some(Box::new(PowerShellScript::new(name, path, extension))),

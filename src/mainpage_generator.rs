@@ -1,5 +1,5 @@
 use horrorshow::prelude::*;
-use json_structs::Script;
+use scripts::Script;
 
 pub struct MainPageHtml {
     pub html_string: String,

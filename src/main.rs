@@ -6,8 +6,10 @@ extern crate rustc_serialize;
 extern crate walkdir;
 #[macro_use]
 extern crate horrorshow;
+#[macro_use]
+extern crate mopa;
 
-mod json_structs;
+mod scripts;
 mod mainpage_generator;
 mod script_handlers;
 
@@ -21,7 +23,6 @@ use walkdir::WalkDir;
 
 use std::env;
 use std::io;
-use std::fs;
 use std::thread;
 use std::time::Duration;
 use std::ffi::OsStr;
@@ -29,24 +30,22 @@ use std::path::{Path, PathBuf};
 use rustc_serialize::json;
 use std::str::FromStr;
 
-use json_structs::Script;
+use scripts::Script;
 use mainpage_generator::MainPageHtml;
-
-
 
 static IMMEDIATE_RET_PATH: &'static str = "ret_immediately";
 static SERVER_URL: &'static str = "192.168.0.7:3000";
 
 fn main() {
     let (logger_before, logger_after) = Logger::new(None);
-    let router =
-        router!(get "/" => show_mainpage_handler,                                                   
+    let router = router!(get "/" => show_mainpage_handler,
+                         get "/scr" => show_scripts_handler,                                                   
                          get "/scr/:scriptName" => script_handler);
 
     let mut chain = Chain::new(router);
 
+    chain.link_after(logger_after); //this seems incredibly prone to breaking for no good reason
     chain.link_before(logger_before);
-    // chain.link_after(logger_after); //why is this broken, I don't even know
 
     Iron::new(chain).http(SERVER_URL).unwrap();
 }
@@ -54,7 +53,6 @@ fn main() {
 fn show_mainpage_handler(_: &mut Request) -> IronResult<Response> {
     if let Ok(scripts) = get_script_list() {
         let mainpage = MainPageHtml::new(scripts);
-        println!("Got mainpage: {}", mainpage.html_string);
         let content_type = "text/html".parse::<Mime>().unwrap();
         return Ok(Response::with((content_type, status::Ok, mainpage.html_string)));
     } else {
@@ -62,16 +60,15 @@ fn show_mainpage_handler(_: &mut Request) -> IronResult<Response> {
     }
 }
 
-// todo: Gotta figure out how to serialize trait objects for this one
-// fn show_scripts_handler(_: &mut Request) -> IronResult<Response> {
-// println!("Getting scripts...");
-// if let Ok(scripts) = get_script_list() {
-//     let scripts = json::encode(&scripts).unwrap();
-//     Ok(Response::with((status::Ok, scripts)))
-// } else {
-//     script_error_handler()
-// }
-// }
+fn show_scripts_handler(_: &mut Request) -> IronResult<Response> {
+    println!("Getting scripts...");
+    if let Ok(scripts) = get_script_list() {
+        let scripts = json::encode(&scripts).unwrap();
+        Ok(Response::with((status::Ok, scripts)))
+    } else {
+        script_error_handler()
+    }
+}
 
 fn script_handler(req: &mut Request) -> IronResult<Response> {
     let ref query = req.extensions.get::<Router>().unwrap().find("scriptName").unwrap_or("/");
@@ -143,7 +140,7 @@ fn get_script_list() -> io::Result<Vec<Box<Script>>> {
                         .unwrap_or_else(|| OsStr::new(""))
                         .to_str()
                         .unwrap_or_else(|| "");
-        if let Some(boxed_script) = json_structs::construct_script(String::from_str(name)
+        if let Some(boxed_script) = scripts::construct_script(String::from_str(name)
                                                                        .unwrap(),
                                                                    String::from(rel_path),
                                                                    String::from(path_ext)) {

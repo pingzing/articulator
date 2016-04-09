@@ -11,6 +11,7 @@ router = "0.1.1"
 logger = "0.0.3"
 walkdir = "0.1.5"
 horrorshow = "0.5.5"
+mopa = "0.2.2"
 
 [build-dependencies]
 walkdir = "0.1.5"
