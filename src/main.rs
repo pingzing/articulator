@@ -8,6 +8,7 @@ extern crate walkdir;
 extern crate horrorshow;
 #[macro_use]
 extern crate mopa;
+extern crate docopt;
 
 mod scripts;
 mod mainpage_generator;
@@ -20,6 +21,8 @@ use router::Router;
 use logger::Logger;
 
 use walkdir::WalkDir;
+
+use docopt::Docopt;
 
 use std::env;
 use std::io;
@@ -34,9 +37,40 @@ use scripts::Script;
 use mainpage_generator::MainPageHtml;
 
 static IMMEDIATE_RET_PATH: &'static str = "ret_immediately";
-static SERVER_URL: &'static str = "192.168.0.7:3000";
+static DEFAULT_SERVER_HOSTNAME: &'static str = "localhost:3000";
+
+#[cfg_attr(rustfmt, rustfmt_skip)]
+const USAGE: &'static str = "
+Articulator
+A small server program that can run arbitrary scripts on the hosting server.
+
+Usage:
+    articulator.exe [<hostname>]
+    articulator.exe (-h | --help)
+    
+Options:
+    hostname        (Optional) An IPv4-compatible hostname string.
+    -h --help       Show this screen.    
+";
+
+#[derive(Debug, RustcDecodable)]
+struct Args {
+    flag_hostname: Option<String>,
+}
 
 fn main() {
+    let args: Args = Docopt::new(USAGE)
+                         .and_then(|d| d.decode())
+                         .unwrap_or_else(|e| {
+                             println!("Invalid input. Terminating.");
+                             e.exit();
+                         });
+
+    let hostname = match args.flag_hostname {
+        Some(name) => name,
+        None => String::from(DEFAULT_SERVER_HOSTNAME),
+    };
+
     let (logger_before, logger_after) = Logger::new(None);
     let router = router!(get "/" => show_mainpage_handler,
                          get "/scr" => show_scripts_handler,                                                   
@@ -47,7 +81,7 @@ fn main() {
     chain.link_after(logger_after); //this seems incredibly prone to breaking for no good reason
     chain.link_before(logger_before);
 
-    Iron::new(chain).http(SERVER_URL).unwrap();
+    Iron::new(chain).http(hostname.as_str()).unwrap();
 }
 
 fn show_mainpage_handler(_: &mut Request) -> IronResult<Response> {
