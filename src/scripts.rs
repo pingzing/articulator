@@ -22,6 +22,7 @@ pub trait Script : Send + Sync + Any {
 }
 mopafy!(Script);
 
+// -- New script types must be added here for proper serialization
 // Implements encoding for Script trait objects, and adds a tag indicating what script type they are, for when we deserialize them
 impl Encodable for Box<Script> {
     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
@@ -33,6 +34,7 @@ impl Encodable for Box<Script> {
     }
 }
 
+// -- New script types must be added here so they can be constructed
 pub fn construct_script(name: String, path: String, extension: String) -> Option<Box<Script>> {
     let script_kind = get_type_kind_for_ext(&extension);
     match script_kind {
@@ -41,12 +43,14 @@ pub fn construct_script(name: String, path: String, extension: String) -> Option
     }
 }
 
+// -- New script types must be added here so they can be identified
 #[derive(RustcEncodable, Debug)]
 pub enum ScriptKind {
     PowerShell,
     Unknown,
 }
 
+// -- New script types must be added here so we can associate an extension with a ScriptKind
 pub fn get_type_kind_for_ext(string: &str) -> ScriptKind {
     match string {
         "ps1" => ScriptKind::PowerShell,

@@ -140,10 +140,9 @@ fn get_script_list() -> io::Result<Vec<Box<Script>>> {
                         .unwrap_or_else(|| OsStr::new(""))
                         .to_str()
                         .unwrap_or_else(|| "");
-        if let Some(boxed_script) = scripts::construct_script(String::from_str(name)
-                                                                       .unwrap(),
-                                                                   String::from(rel_path),
-                                                                   String::from(path_ext)) {
+        if let Some(boxed_script) = scripts::construct_script(String::from_str(name).unwrap(),
+                                                              String::from(rel_path),
+                                                              String::from(path_ext)) {
             scripts.push(boxed_script);
         } else {
             return Err(io::Error::new(io::ErrorKind::InvalidInput,
