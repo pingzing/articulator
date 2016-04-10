@@ -66,10 +66,15 @@ fn main() {
                              e.exit();
                          });
 
-    println!("Args: {:?}", args);
     let hostname = match args.arg_hostname {
-        Some(name) => name,
-        None => String::from(DEFAULT_SERVER_HOSTNAME),
+        Some(name) => {
+            println!("Staring server on {}", &name);
+            name
+        }
+        None => {
+            println!("Starting server on {}", &DEFAULT_SERVER_HOSTNAME);
+            String::from(DEFAULT_SERVER_HOSTNAME)
+        }
     };
 
     let (logger_before, logger_after) = Logger::new(None);
