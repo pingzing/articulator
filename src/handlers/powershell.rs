@@ -47,7 +47,7 @@ impl Script for PowerShellScript {
         if full_path.is_err() {
             return scripts::generic_error_handler();
         }
-
+        
         let full_path = full_path.unwrap();
         let output = Command::new("powershell.exe")
                          .arg("-executionpolicy")

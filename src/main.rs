@@ -12,7 +12,8 @@ extern crate docopt;
 
 mod scripts;
 mod mainpage_generator;
-mod script_handlers;
+mod handlers;
+mod constants;
 
 use iron::prelude::*;
 use iron::status;
@@ -36,7 +37,6 @@ use std::str::FromStr;
 use scripts::Script;
 use mainpage_generator::MainPageHtml;
 
-static IMMEDIATE_RET_PATH: &'static str = "ret_immediately";
 static DEFAULT_SERVER_HOSTNAME: &'static str = "localhost:3000";
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -116,7 +116,7 @@ fn script_handler(req: &mut Request) -> IronResult<Response> {
 
     match script_path {
         Ok(path) => {
-            if path.to_string_lossy().contains(IMMEDIATE_RET_PATH) {
+            if path.to_string_lossy().contains(constants::IMMEDIATE_RET_PATH) {
                 run_early_return_script(script)
             } else {
                 script.run()

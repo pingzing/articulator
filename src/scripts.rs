@@ -11,10 +11,9 @@ use std::process::Output;
 
 use mopa::Any;
 
-use script_handlers::powershell::PowerShellScript;
-use script_handlers::python::PythonScript;
-
-static IMMEDIATE_RET_PATH: &'static str = "ret_immediately";
+use handlers::powershell::PowerShellScript;
+use handlers::python::PythonScript;
+use constants;
 
 pub trait Script : Send + Sync + Any {
     fn get_name(&self) -> &str;
@@ -26,7 +25,7 @@ pub trait Script : Send + Sync + Any {
 mopafy!(Script);
 
 // -- New script types must be added here for proper serialization
-// Implements encoding for Script trait objects, and adds a tag indicating what script type they are, for when we deserialize them
+// Implements encoding for Script trait objects
 impl Encodable for Box<Script> {
     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
         if let Some(script) = self.downcast_ref::<PowerShellScript>() {
@@ -81,7 +80,7 @@ pub fn generic_get_full_path<T: Script>(script: &T) -> io::Result<PathBuf> {
             } else {
                 // check in subdir
                 let script_path = parent_dir.join("scripts")
-                                            .join(IMMEDIATE_RET_PATH)
+                                            .join(constants::IMMEDIATE_RET_PATH)
                                             .join(format!("{}{}",
                                                           script.get_name(),
                                                           script.get_extension()));

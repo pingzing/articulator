@@ -1,0 +1,1 @@
+pub static IMMEDIATE_RET_PATH: &'static str = "ret_immediately";
