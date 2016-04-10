@@ -17,3 +17,6 @@ Articulator will look in the `/scripts` folder for scripts to run. Anything in t
 `http://hostname/scr` will return a JSON response with all scripts listed.
 
 `http://hostname/scr/ScriptNameHere` will attempt to execute `ScriptNameHere`. Script names are a script's file name, minus their extension.
+
+##Security?
+Nonexistent. Do not expose this to the open internet, or Bad Things will probably happen.
