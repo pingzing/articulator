@@ -55,7 +55,7 @@ Options:
 
 #[derive(Debug, RustcDecodable)]
 struct Args {
-    flag_hostname: Option<String>,
+    arg_hostname: Option<String>,
 }
 
 fn main() {
@@ -66,7 +66,8 @@ fn main() {
                              e.exit();
                          });
 
-    let hostname = match args.flag_hostname {
+    println!("Args: {:?}", args);
+    let hostname = match args.arg_hostname {
         Some(name) => name,
         None => String::from(DEFAULT_SERVER_HOSTNAME),
     };
