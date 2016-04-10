@@ -12,3 +12,6 @@
 
 # IDE stuff
 .vscode
+
+# Personal, local
+deploy.ps1

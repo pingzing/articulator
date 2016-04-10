@@ -1,6 +1,9 @@
 #Articulator
 
-A little Rust-based server for running scripts stored on the server. Currently only supports PowerShell scripts.
+A little Rust-based server for running scripts stored on the server.
+Currently supports:
+ * PowerShell
+ * Python
 
 ##Building
 `git clone` to a directory, and `cargo build`. The `/scripts` directory and its contents (except for .gitignore files) will be copied to the output directory when built.
@@ -12,7 +15,7 @@ Run `articulator [hostname]` and connect to `http://hostname` in your browser. I
 Articulator will look in the `/scripts` folder for scripts to run. Anything in the `ret_immediately` folder will return a generic response immediately, and then kick off the requested script after a small delay. This is useful for running scripts that might prevent the server from sending a response in a timely manner (e.g. putting the server the sleep).
 
 ##Addresses
-`http://hostname/` will generate and return small HTML page which show all the scripts in the `/scripts` folder and its subdirectories.
+`http://hostname/` will generate and return a small HTML page which show all the scripts in the `/scripts` folder and its subdirectories.
 
 `http://hostname/scr` will return a JSON response with all scripts listed.
 
