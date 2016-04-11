@@ -13,6 +13,7 @@ use mopa::Any;
 
 use handlers::powershell::PowerShellScript;
 use handlers::python::PythonScript;
+use handlers::sh::ShellScript;
 use constants;
 
 pub trait Script : Send + Sync + Any {
@@ -32,6 +33,8 @@ impl Encodable for Box<Script> {
             script.encode(s)
         } else if let Some(script) = self.downcast_ref::<PythonScript>() {
             script.encode(s)
+        } else if let Some(script) = self.downcast_ref::<ShellScript>() {
+            script.encode(s)
         } else {
             panic!("Unknown concrete script type.")
         }
@@ -44,6 +47,7 @@ pub fn construct_script(name: String, path: String, extension: String) -> Option
     match script_kind {
         ScriptKind::PowerShell => Some(Box::new(PowerShellScript::new(name, path, extension))),
         ScriptKind::Python => Some(Box::new(PythonScript::new(name, path, extension))),
+        ScriptKind::Shell => Some(Box::new(ShellScript::new(name, path, extension))),
         ScriptKind::Unknown => None,
     }
 }
@@ -53,6 +57,7 @@ pub fn construct_script(name: String, path: String, extension: String) -> Option
 pub enum ScriptKind {
     PowerShell,
     Python,
+    Shell,
     Unknown,
 }
 
@@ -61,6 +66,7 @@ pub fn get_type_kind_for_ext(string: &str) -> ScriptKind {
     match string {
         "ps1" => ScriptKind::PowerShell,
         "py" => ScriptKind::Python,
+        "sh" => ScriptKind::Shell,
         "" => ScriptKind::Unknown,
         _ => ScriptKind::Unknown,
     }

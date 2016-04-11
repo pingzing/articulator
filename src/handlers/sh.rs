@@ -8,23 +8,23 @@ use std::process::Command;
 use iron::prelude::*;
 
 #[derive(RustcEncodable, Debug)]
-pub struct PowerShellScript {
+pub struct ShellScript {
     name: String,
     relative_path: String,
     script_kind: ScriptKind,
 }
 
-impl PowerShellScript {
-    pub fn new(n: String, p: String, e: String) -> PowerShellScript {
-        return PowerShellScript {
+impl ShellScript {
+    pub fn new(n: String, p: String, e: String) -> ShellScript {
+        ShellScript {
             name: n,
             relative_path: p,
             script_kind: scripts::get_type_kind_for_ext(&e),
-        };
+        }
     }
 }
 
-impl Script for PowerShellScript {
+impl Script for ShellScript {
     fn get_name(&self) -> &str {
         &self.name
     }
@@ -34,27 +34,25 @@ impl Script for PowerShellScript {
     }
 
     fn get_extension(&self) -> &str {
-        ".ps1"
+        ".sh"
     }
 
     fn get_full_path(&self) -> io::Result<PathBuf> {
-        scripts::generic_get_full_path::<PowerShellScript>(self)
+        scripts::generic_get_full_path::<ShellScript>(self)
     }
-
-    // todo: everything after defining output can probably live somewhere more generic
+    
     fn run(&self) -> IronResult<Response> {
         let full_path = self.get_full_path();
         if full_path.is_err() {
             return scripts::generic_error_handler();
-        }
-
+        }        
+        
         let full_path = full_path.unwrap();
-        let output = Command::new("powershell.exe")
-                         .arg("-executionpolicy")
-                         .arg("bypass")
-                         .arg("-File")
-                         .arg(full_path)
-                         .output();
+        let output = Command::new("sh")
+                        .arg(full_path)
+                        .output();
+        
         return scripts::generic_run(output);
-    }
+    }        
 }
+
