@@ -155,6 +155,7 @@ fn get_script_folder() -> io::Result<PathBuf> {
 }
 
 // todo: fix unwrap infestation in here
+#[cfg_attr(rustfmt, rustfmt_skip)]
 fn get_script_list() -> io::Result<Vec<Box<Script>>> {
     let folder = try!(get_script_folder());
     let paths = WalkDir::new(&folder);
@@ -177,10 +178,20 @@ fn get_script_list() -> io::Result<Vec<Box<Script>>> {
 
         let path_ext = p.path()
                         .extension()
-                        .unwrap_or_else(|| OsStr::new(""))
+                        .unwrap_or(OsStr::new(""))
                         .to_str()
-                        .unwrap_or_else(|| "");
-        if let Some(boxed_script) = scripts::construct_script(String::from_str(name).unwrap(),
+                        .unwrap_or("");
+        if path_ext == "" {
+            if let Some(boxed_script) = scripts::construct_script_binary(String::from_str(name).unwrap(),
+                                                                         String::from(rel_path),
+                                                                         p.path()) {
+                scripts.push(boxed_script);
+            } else {
+                return Err(io::Error::new(io::ErrorKind::InvalidInput,
+                                      format!("Unable to determine file type for script {:?}",
+                                              p.path())));
+            }           
+        } else if let Some(boxed_script) = scripts::construct_script(String::from_str(name).unwrap(),
                                                               String::from(rel_path),
                                                               String::from(path_ext)) {
             scripts.push(boxed_script);

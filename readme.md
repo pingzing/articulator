@@ -4,6 +4,7 @@ A little Rust-based server for running scripts stored on the server.
 Currently supports:
  * PowerShell
  * Python
+ * Shell
 
 ##Building
 `git clone` to a directory, and `cargo build`. The `/scripts` directory and its contents (except for .gitignore files) will be copied to the output directory when built.

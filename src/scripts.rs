@@ -3,7 +3,7 @@ use iron::status;
 
 use std::io;
 use std::string::*;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 use std::env;
 use std::fs;
 use rustc_serialize::{Encodable, Encoder};
@@ -50,6 +50,20 @@ pub fn construct_script(name: String, path: String, extension: String) -> Option
         ScriptKind::Shell => Some(Box::new(ShellScript::new(name, path, extension))),
         ScriptKind::Unknown => None,
     }
+}
+
+pub fn construct_script_binary(name: String,
+                               rel_path: String,
+                               full_path: &Path)
+                               -> Option<Box<Script>> {
+    match check_is_executable(full_path) {
+        true => None,//Some(Box::new(BinaryScript::new(name, path))),
+        false => None,
+    }
+}
+
+fn check_is_executable(path: &Path) -> bool {
+    return false;
 }
 
 // -- New script types must be added here so they can be identified

@@ -40,19 +40,18 @@ impl Script for ShellScript {
     fn get_full_path(&self) -> io::Result<PathBuf> {
         scripts::generic_get_full_path::<ShellScript>(self)
     }
-    
+
     fn run(&self) -> IronResult<Response> {
         let full_path = self.get_full_path();
         if full_path.is_err() {
             return scripts::generic_error_handler();
-        }        
-        
+        }
+
         let full_path = full_path.unwrap();
         let output = Command::new("sh")
-                        .arg(full_path)
-                        .output();
-        
-        return scripts::generic_run(output);
-    }        
-}
+                         .arg(full_path)
+                         .output();
 
+        return scripts::generic_run(output);
+    }
+}
