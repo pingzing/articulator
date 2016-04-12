@@ -13,5 +13,5 @@
 # IDE stuff
 .vscode
 
-# Personal, local
-deploy.ps1
+# Personal, local, etc
+/do_not_commit

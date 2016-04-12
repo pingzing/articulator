@@ -23,4 +23,4 @@ Articulator will look in the `/scripts` folder for scripts to run. Anything in t
 `http://hostname/scr/ScriptNameHere` will attempt to execute `ScriptNameHere`. Script names are a script's file name, minus their extension.
 
 ##Security?
-Nonexistent. Do not expose this to the open internet, or Bad Things will probably happen.
+Nonexistent. Do not expose this to the open internet, or Bad Things will probably happen. Wrap it up in [apache](https://httpd.apache.org/) or [nginx](https://www.nginx.com/) (which actually does have a [Windows version](http://nginx.org/en/docs/windows.html)!) and make them act as reverse proxies, and do authentication and encryption.
