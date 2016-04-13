@@ -61,8 +61,7 @@ struct Args {
 fn main() {
     let args: Args = Docopt::new(USAGE)
                          .and_then(|d| d.decode())
-                         .unwrap_or_else(|e| {
-                             println!("Invalid input. Terminating.");
+                         .unwrap_or_else(|e| {                             
                              e.exit();
                          });
 
@@ -75,7 +74,7 @@ fn main() {
             println!("Starting server on {}", &DEFAULT_SERVER_HOSTNAME);
             String::from(DEFAULT_SERVER_HOSTNAME)
         }
-    };
+    };                
 
     let (logger_before, logger_after) = Logger::new(None);
     let router = router!(get "/" => show_mainpage_handler,
@@ -90,7 +89,7 @@ fn main() {
     Iron::new(chain).http(hostname.as_str()).unwrap();
 }
 
-fn show_mainpage_handler(_: &mut Request) -> IronResult<Response> {
+fn show_mainpage_handler(_: &mut Request) -> IronResult<Response> {    
     if let Ok(scripts) = get_script_list() {
         let mainpage = MainPageHtml::new(scripts);
         let content_type = "text/html".parse::<Mime>().unwrap();

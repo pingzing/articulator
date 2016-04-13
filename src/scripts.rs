@@ -14,6 +14,7 @@ use mopa::Any;
 use handlers::powershell::PowerShellScript;
 use handlers::python::PythonScript;
 use handlers::sh::ShellScript;
+use handlers::binary::BinaryScript;
 use constants;
 
 pub trait Script : Send + Sync + Any {
@@ -48,21 +49,21 @@ pub fn construct_script(name: String, path: String, extension: String) -> Option
         ScriptKind::PowerShell => Some(Box::new(PowerShellScript::new(name, path, extension))),
         ScriptKind::Python => Some(Box::new(PythonScript::new(name, path, extension))),
         ScriptKind::Shell => Some(Box::new(ShellScript::new(name, path, extension))),
+        ScriptKind::Binary => Some(Box::new(BinaryScript::new(name, path))),
         ScriptKind::Unknown => None,
     }
 }
 
-pub fn construct_script_binary(name: String,
-                               rel_path: String,
-                               full_path: &Path)
-                               -> Option<Box<Script>> {
+pub fn construct_script_binary(name: String, rel_path: String, full_path: &Path) -> Option<Box<Script>> {
     match check_is_executable(full_path) {
-        true => None,//Some(Box::new(BinaryScript::new(name, path))),
+        true => Some(Box::new(BinaryScript::new(name, rel_path))),
         false => None,
     }
 }
 
-fn check_is_executable(path: &Path) -> bool {
+//todo: implement, and rename the _ to "path"
+fn check_is_executable(_: &Path) -> bool {
+    //todo: we only do this on Unix systems. Check file permissions, and see if we can execute it.
     return false;
 }
 
@@ -72,6 +73,7 @@ pub enum ScriptKind {
     PowerShell,
     Python,
     Shell,
+    Binary,
     Unknown,
 }
 
