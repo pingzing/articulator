@@ -1,7 +1,6 @@
 extern crate iron;
 #[macro_use]
 extern crate router;
-extern crate logger;
 extern crate rustc_serialize;
 extern crate walkdir;
 #[macro_use]
@@ -19,7 +18,6 @@ use iron::prelude::*;
 use iron::status;
 use iron::mime::Mime;
 use router::Router;
-use logger::Logger;
 
 use walkdir::WalkDir;
 
@@ -75,16 +73,12 @@ fn main() {
             String::from(DEFAULT_SERVER_HOSTNAME)
         }
     };                
-
-    let (logger_before, logger_after) = Logger::new(None);
+    
     let router = router!(get "/" => show_mainpage_handler,
                          get "/scr" => show_scripts_handler,                                                   
                          get "/scr/:scriptName" => script_handler);
 
-    let mut chain = Chain::new(router);
-
-    chain.link_after(logger_after); //this seems incredibly prone to breaking for no good reason
-    chain.link_before(logger_before);
+    let chain = Chain::new(router);
 
     Iron::new(chain).http(hostname.as_str()).unwrap();
 }
