@@ -51,6 +51,19 @@ impl Script for BinaryScript {
         let output = Command::new(full_path).output();
         return scripts::generic_run(output);
     }
+
+    fn run_with_arg(&self, arg: String) -> IronResult<Response> {
+        let full_path = self.get_full_path();
+        if full_path.is_err() {
+            return scripts::generic_error_handler();
+        }
+        
+        let full_path = full_path.unwrap();
+        let output = Command::new(full_path)
+                            .arg(arg)
+                            .output();
+        return scripts::generic_run(output);
+    }
 }
 
 #[cfg(target_family="windows")]

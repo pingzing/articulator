@@ -1,6 +1,6 @@
 [package]
 name = "articulator"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Neil McAlister <mcalistern@gmail.com>"]
 build = "build.rs"
 
