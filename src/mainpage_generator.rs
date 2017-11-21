@@ -1,4 +1,5 @@
 use horrorshow::prelude::*;
+use horrorshow::helper::doctype;
 use scripts::Script;
 
 pub struct MainPageHtml {
@@ -9,11 +10,11 @@ impl MainPageHtml {
     pub fn new(scripts: Vec<Box<Script>>) -> MainPageHtml {
         MainPageHtml {
             html_string: html! {
-                : raw!("<!DOCTYPE html>");
+                : doctype::HTML;
                 html {
                     head {
-                        meta(name="viewport", content="width=device-width, initial-scale=1.0"){}
-                        title { : "Runnable scripts"}
+                        meta(name="viewport", content="width=device-width, initial-scale=1.0");                     
+                        title : "Runnable scripts";
                     }
                     body(style="display: table") {
                         h1(id="main_header", style="display: table") {
@@ -25,7 +26,7 @@ impl MainPageHtml {
                         ul(id="normal_scripts_list", style="display: table") {
                             @ for script in scripts {
                                 li {
-                                    : raw!(format!("<a href=\"/scr/{}\">{}</a>", script.get_name(), script.get_name()))
+                                    : Raw(format!("<a href=\"/scr/{}\">{}</a>", script.get_name(), script.get_name()))
                                 }
                             }
                         }
