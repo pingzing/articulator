@@ -1,7 +1,6 @@
 extern crate iron;
 #[macro_use]
 extern crate router;
-extern crate logger;
 extern crate rustc_serialize;
 extern crate walkdir;
 #[macro_use]
@@ -19,7 +18,6 @@ use iron::prelude::*;
 use iron::status;
 use iron::mime::Mime;
 use router::Router;
-use logger::Logger;
 
 use walkdir::WalkDir;
 
@@ -75,16 +73,13 @@ fn main() {
             String::from(DEFAULT_SERVER_HOSTNAME)
         }
     };                
-
-    let (logger_before, logger_after) = Logger::new(None);
+    
     let router = router!(get "/" => show_mainpage_handler,
                          get "/scr" => show_scripts_handler,                                                   
-                         get "/scr/:scriptName" => script_handler);
+                         get "/scr/:scriptName" => script_handler,
+                         get "/scr/:scriptName/:argValue" => script_with_args_handler);
 
-    let mut chain = Chain::new(router);
-
-    chain.link_after(logger_after); //this seems incredibly prone to breaking for no good reason
-    chain.link_before(logger_before);
+    let chain = Chain::new(router);
 
     Iron::new(chain).http(hostname.as_str()).unwrap();
 }
@@ -120,10 +115,35 @@ fn script_handler(req: &mut Request) -> IronResult<Response> {
 
     match script_path {
         Ok(path) => {
-            if path.to_string_lossy().contains(constants::IMMEDIATE_RET_PATH) {
+            if path.to_string_lossy().contains(constants::IMMEDIATE_RET_PATH) {                
                 run_early_return_script(script)
             } else {
                 script.run()
+            }
+        }
+        Err(_) => {
+            println!("Could not find script.");
+            script_error_handler()
+        } 
+    }
+}
+
+fn script_with_args_handler(req: &mut Request) -> IronResult<Response> {
+    let ref query = req.extensions.get::<Router>().unwrap().find("scriptName").unwrap_or("/");
+    let ref arg = req.extensions.get::<Router>().unwrap().find("argValue").unwrap_or("");
+    let script = get_script(query);
+    if script.is_err() {
+        return script_error_handler();
+    }
+    let script = script.unwrap();
+    let script_path = script.get_full_path();
+
+    match script_path {
+        Ok(path) => {
+            if path.to_string_lossy().contains(constants::IMMEDIATE_RET_PATH) {                
+                run_early_return_script_with_args(script, arg)
+            } else {
+                script.run_with_arg(arg.to_string())
             }
         }
         Err(_) => {
@@ -137,6 +157,15 @@ fn run_early_return_script(script: Box<Script>) -> IronResult<Response> {
     thread::spawn(move || {
         thread::sleep(Duration::from_millis(500));
         script.run().ok();
+    });
+    Ok(Response::with((status::Ok, "Attempted to kick off early-return script.")))
+}
+
+fn run_early_return_script_with_args(script: Box<Script>, args: &str) -> IronResult<Response> {    
+    let arg_string = args.to_string();
+    thread::spawn(move || {
+        thread::sleep(Duration::from_millis(500));
+        script.run_with_arg(arg_string).ok();
     });
     Ok(Response::with((status::Ok, "Attempted to kick off early-return script.")))
 }

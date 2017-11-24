@@ -1,16 +1,15 @@
 [package]
 name = "articulator"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Neil McAlister <mcalistern@gmail.com>"]
 build = "build.rs"
 
 [dependencies]
 iron = "0.3.0"
-rustc-serialize = "*"
+rustc-serialize = "0.3.19"
 router = "0.1.1"
-logger = "0.0.3"
 walkdir = "0.1.5"
-horrorshow = "0.5.5"
+horrorshow = "0.6.2"
 mopa = "0.2.2"
 docopt = "0.6"
 

@@ -23,6 +23,7 @@ pub trait Script : Send + Sync + mopa::Any {
     fn get_extension(&self) -> &str;
     fn get_full_path(&self) -> io::Result<PathBuf>;
     fn run(&self) -> IronResult<Response>;
+    fn run_with_arg(&self, arg: String) -> IronResult<Response>;
 }
 mopafy!(Script);
 
