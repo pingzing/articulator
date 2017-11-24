@@ -9,7 +9,7 @@ use std::fs;
 use rustc_serialize::{Encodable, Encoder};
 use std::process::Output;
 
-use mopa::Any;
+use mopa;
 
 use handlers::powershell::PowerShellScript;
 use handlers::python::PythonScript;
@@ -17,7 +17,7 @@ use handlers::sh::ShellScript;
 use handlers::binary::BinaryScript;
 use constants;
 
-pub trait Script : Send + Sync + Any {
+pub trait Script : Send + Sync + mopa::Any {
     fn get_name(&self) -> &str;
     fn get_relative_path(&self) -> &str;
     fn get_extension(&self) -> &str;
