@@ -5,9 +5,10 @@ authors = ["Neil McAlister <mcalistern@gmail.com>"]
 build = "build.rs"
 
 [dependencies]
-iron = "0.3.0"
+iron = "0.6.0"
+urlencoded = "0.6.0"
 rustc-serialize = "0.3.19"
-router = "0.1.1"
+router = "0.6.0"
 walkdir = "0.1.5"
 horrorshow = "0.6.2"
 mopa = "0.2.2"

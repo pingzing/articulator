@@ -8,6 +8,7 @@ extern crate horrorshow;
 #[macro_use]
 extern crate mopa;
 extern crate docopt;
+extern crate urlencoded;
 
 mod scripts;
 mod mainpage_generator;
@@ -18,6 +19,7 @@ use iron::prelude::*;
 use iron::status;
 use iron::mime::Mime;
 use router::Router;
+use urlencoded::UrlEncodedQuery;
 
 use walkdir::WalkDir;
 
@@ -74,10 +76,11 @@ fn main() {
         }
     };                
     
-    let router = router!(get "/" => show_mainpage_handler,
-                         get "/scr" => show_scripts_handler,                                                   
-                         get "/scr/:scriptName" => script_handler,
-                         get "/scr/:scriptName/:argValue" => script_with_args_handler);
+    let mut router = Router::new();
+    router.get("/", show_mainpage_handler, "show_mainpage_handler");
+    router.get("/scr", show_scripts_handler, "show_scripts_handler");
+    router.get("/scr/:scriptName", script_handler, "script_handler");
+    router.get("/scr/:scriptName/?arg=:argValue", script_with_args_handler, "script_with_args_handler");
 
     let chain = Chain::new(router);
 
@@ -128,10 +131,16 @@ fn script_handler(req: &mut Request) -> IronResult<Response> {
     }
 }
 
-fn script_with_args_handler(req: &mut Request) -> IronResult<Response> {
-    let ref query = req.extensions.get::<Router>().unwrap().find("scriptName").unwrap_or("/");
-    let ref arg = req.extensions.get::<Router>().unwrap().find("argValue").unwrap_or("");
-    let script = get_script(query);
+fn script_with_args_handler(req: &mut Request) -> IronResult<Response> {    
+    let arg = match req.get::<UrlEncodedQuery>(){
+        Ok(mut hashmap) => {
+            hashmap.remove("arg").unwrap()
+        },
+        Err(_) => vec![String::from("")]
+    };
+    let arg = &arg[0].as_str();
+    let script_name = req.extensions.get::<Router>().unwrap().find("scriptName").unwrap_or("/");
+    let script = get_script(script_name);
     if script.is_err() {
         return script_error_handler();
     }
@@ -162,10 +171,10 @@ fn run_early_return_script(script: Box<Script>) -> IronResult<Response> {
 }
 
 fn run_early_return_script_with_args(script: Box<Script>, args: &str) -> IronResult<Response> {    
-    let arg_string = args.to_string();
+    let string_arg = args.to_string();
     thread::spawn(move || {
         thread::sleep(Duration::from_millis(500));
-        script.run_with_arg(arg_string).ok();
+        script.run_with_arg(string_arg).ok();
     });
     Ok(Response::with((status::Ok, "Attempted to kick off early-return script.")))
 }
